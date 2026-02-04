@@ -91,6 +91,11 @@ canvas{display:block}
   border-width:14px 0 14px 18px;
   border-color:transparent transparent transparent white;
 }
+
+/* 🔥 RIGHT BUTTON MORE LEFT */
+#rightBtn{
+  margin-right:50px;
+}
 </style>
 </head>
 
@@ -130,7 +135,7 @@ heroImg.src = "mirza.png";
 heroHitImg.src = "hit.png";
 villainImg.src = "nasir.png";
 
-/* AUDIO (mobile safe) */
+/* AUDIO */
 const bgMusic = new Audio("game.mp3");
 bgMusic.loop = true;
 bgMusic.volume = 0.8;
@@ -143,8 +148,8 @@ let score = 0;
 let frame = 0;
 let lives = 3;
 
-/* SHOOT FREQUENCY CONTROL */
-let shootInterval = 120; // শুরুতে ধীরে
+/* SHOOT FREQUENCY */
+let shootInterval = 120;
 
 /* HERO */
 let hero = {
@@ -168,7 +173,7 @@ let villain = {
 
 let bullets = [];
 
-/* AUDIO UNLOCK (IMPORTANT) */
+/* AUDIO UNLOCK */
 function unlockAudio(){
   bgMusic.play().then(()=>{
     bgMusic.pause();
@@ -211,12 +216,12 @@ function bind(btn,fn){
 bind(leftBtn,v=>moveLeft=v);
 bind(rightBtn,v=>moveRight=v);
 
-/* SHOOT (speed constant) */
+/* SHOOT */
 function shoot(){
   bullets.push({
     x: villain.x + villain.w/2,
     y: villain.y + villain.h,
-    vy: 7 // স্পিড ফিক্সড
+    vy: 7
   });
 }
 
@@ -250,10 +255,7 @@ function loop(){
       villain.dir *= -1;
     }
 
-    /* SHOOT FREQUENCY (ONLY) */
-    if(frame % shootInterval === 0){
-      shoot();
-    }
+    if(frame % shootInterval === 0) shoot();
 
     bullets.forEach(b=>{
       b.y += b.vy;
@@ -274,7 +276,6 @@ function loop(){
     score++;
     scoreDiv.innerText = "Score: " + score;
 
-    /* EVERY TIME -> FREQUENCY INCREASE */
     if(frame % 200 === 0){
       shootInterval = Math.max(15, shootInterval - 10);
     }
@@ -286,10 +287,16 @@ function loop(){
   let shake = hero.shake ? Math.random()*8-4 : 0;
   if(hero.shake>0) hero.shake--;
 
+  /* 💀 GAME OVER IMAGE – BIG + CENTER */
   if(state === "finish"){
-    ctx.drawImage(heroHitImg,
-      hero.x-40, hero.y-40,
-      hero.w+80, hero.h+80
+    const bigW = hero.w * 2.2;
+    const bigH = hero.h * 2.2;
+    ctx.drawImage(
+      heroHitImg,
+      canvas.width/2 - bigW/2,
+      canvas.height/2 - bigH/2,
+      bigW,
+      bigH
     );
   }else{
     ctx.drawImage(heroImg, hero.x+shake, hero.y, hero.w, hero.h);
