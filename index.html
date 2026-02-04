@@ -12,6 +12,7 @@ body{
   font-family:Arial,sans-serif;
   background:linear-gradient(180deg,#0f2027,#203a43,#2c5364);
   color:white;
+  touch-action: none; /* important for swipe */
 }
 #ui{
   position:fixed;
@@ -35,13 +36,6 @@ body{
   color:white;
   z-index:10;
 }
-#flash{
-  position:fixed;
-  inset:0;
-  background:rgba(255,255,255,0.25);
-  display:none;
-  z-index:9;
-}
 #footer{
   position:fixed;
   bottom:8px;
@@ -62,8 +56,6 @@ canvas{display:block}
   <div id="life">❤️❤️❤️</div>
 </div>
 
-<div id="flash"></div>
-
 <canvas id="game"></canvas>
 
 <button id="startBtn" onclick="startGame()">START</button>
@@ -73,6 +65,7 @@ canvas{display:block}
 </div>
 
 <script>
+/* ================== SETUP ================== */
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 canvas.width = innerWidth;
@@ -83,123 +76,161 @@ heroImg.src = "mirza.png";
 const villainImg = new Image();
 villainImg.src = "nasir.png";
 
-let state="idle";
-let score=0, frame=0, difficulty=1;
-let lives=3;
+/* ================== GAME STATE ================== */
+let state = "idle"; // idle, play, finish
+let score = 0, frame = 0, difficulty = 1;
+let lives = 3;
 
-let hero={
-  x:canvas.width/2-30,
-  y:canvas.height-110,
-  w:60,h:80,
-  speed:8,shake:0
+/* ================== HERO ================== */
+let hero = {
+  x: canvas.width/2 - 30,
+  y: canvas.height - 110,
+  w: 60,
+  h: 80,
+  speed: 7,
+  shake: 0
 };
 
-let villain={
-  x:canvas.width/2-40,
-  y:20,
-  w:80,h:100,
-  dir:1,speed:3
+/* ================== VILLAIN ================== */
+let villain = {
+  x: canvas.width/2 - 40,
+  y: 20,
+  w: 80,
+  h: 100,
+  dir: 1,
+  speed: 3
 };
 
-let bullets=[];
+let bullets = [];
 
-/* ---- START ---- */
+/* ================== START ================== */
 function startGame(){
-  state="play";
-  score=0; frame=0; difficulty=1;
-  lives=3;
-  bullets=[];
-  hero.x=canvas.width/2-30;
-  document.getElementById("life").innerText="❤️❤️❤️";
-  document.getElementById("score").innerText="Score: 0";
-  document.getElementById("startBtn").style.display="none";
+  state = "play";
+  score = 0;
+  frame = 0;
+  difficulty = 1;
+  lives = 3;
+  bullets = [];
+  hero.x = canvas.width/2 - hero.w/2;
+  document.getElementById("life").innerText = "❤️❤️❤️";
+  document.getElementById("score").innerText = "Score: 0";
+  document.getElementById("startBtn").style.display = "none";
 }
 
-/* ---- INPUT ---- */
-document.addEventListener("keydown",e=>{
-  if(state!=="play") return;
-  if(e.code==="ArrowLeft") hero.x-=hero.speed;
-  if(e.code==="ArrowRight") hero.x+=hero.speed;
-});
-document.addEventListener("click",e=>{
-  if(state!=="play") return;
-  hero.x += (e.clientX<innerWidth/2?-hero.speed:hero.speed);
+/* ================== INPUT (KEYBOARD) ================== */
+document.addEventListener("keydown", e => {
+  if(state !== "play") return;
+  if(e.code === "ArrowLeft") hero.x -= hero.speed;
+  if(e.code === "ArrowRight") hero.x += hero.speed;
 });
 
-/* ---- SHOOT ---- */
+/* ================== INPUT (SWIPE) ================== */
+let touchStartX = 0;
+
+document.addEventListener("touchstart", e => {
+  touchStartX = e.touches[0].clientX;
+});
+
+document.addEventListener("touchend", e => {
+  if(state !== "play") return;
+  let touchEndX = e.changedTouches[0].clientX;
+  let diff = touchEndX - touchStartX;
+
+  if(Math.abs(diff) > 30){
+    if(diff > 0){
+      hero.x += hero.speed * 6; // swipe right
+    } else {
+      hero.x -= hero.speed * 6; // swipe left
+    }
+  }
+});
+
+/* ================== SHOOT ================== */
 function shoot(){
   bullets.push({
-    x:villain.x+villain.w/2,
-    y:villain.y+villain.h,
-    vy:6+difficulty
+    x: villain.x + villain.w/2,
+    y: villain.y + villain.h,
+    vy: 6 + difficulty
   });
 }
 
-/* ---- HIT ---- */
+/* ================== HIT ================== */
 function hit(){
   lives--;
-  hero.shake=10;
+  hero.shake = 10;
   navigator.vibrate?.([80,40,80]);
-  document.getElementById("flash").style.display="block";
-  setTimeout(()=>flash.style.display="none",100);
-  document.getElementById("life").innerText="❤️".repeat(lives);
-  if(lives<=0){
-    state="finish";
-    document.getElementById("startBtn").style.display="block";
+  document.getElementById("life").innerText = "❤️".repeat(lives);
+
+  if(lives <= 0){
+    state = "finish";
+    document.getElementById("startBtn").style.display = "block";
   }
 }
 
-/* ---- LOOP ---- */
+/* ================== LOOP ================== */
 function loop(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  if(state==="play"){
-    villain.x+=villain.dir*villain.speed*difficulty;
-    if(villain.x<=0||villain.x+villain.w>=canvas.width) villain.dir*=-1;
+  if(state === "play"){
+    // Villain movement
+    villain.x += villain.dir * villain.speed * difficulty;
+    if(villain.x <= 0 || villain.x + villain.w >= canvas.width){
+      villain.dir *= -1;
+    }
 
-    if(frame%Math.max(40,120-difficulty*10)===0) shoot();
+    // Shooting
+    if(frame % Math.max(40, 120 - difficulty * 10) === 0){
+      shoot();
+    }
 
-    bullets.forEach(b=>{
-      b.y+=b.vy;
-      ctx.fillStyle="rgba(255,215,0,0.9)";
+    bullets.forEach(b => {
+      b.y += b.vy;
+      ctx.fillStyle = "gold";
       ctx.beginPath();
-      ctx.arc(b.x,b.y,6,0,Math.PI*2);
+      ctx.arc(b.x, b.y, 6, 0, Math.PI*2);
       ctx.fill();
 
+      // Collision
       if(
-        hero.x<b.x+6&&hero.x+hero.w>b.x-6&&
-        hero.y<b.y+6&&hero.y+hero.h>b.y
+        hero.x < b.x + 6 &&
+        hero.x + hero.w > b.x - 6 &&
+        hero.y < b.y + 6 &&
+        hero.y + hero.h > b.y
       ){
         hit();
-        b.y=canvas.height+100;
+        b.y = canvas.height + 100;
       }
     });
 
-    bullets=bullets.filter(b=>b.y<canvas.height+50);
+    bullets = bullets.filter(b => b.y < canvas.height + 50);
 
     score++;
-    if(frame%300===0) difficulty+=0.3;
-    document.getElementById("score").innerText="Score: "+score;
+    if(frame % 300 === 0) difficulty += 0.3;
+    document.getElementById("score").innerText = "Score: " + score;
   }
 
-  // draw villain
-  ctx.drawImage(villainImg,villain.x,villain.y,villain.w,villain.h);
+  // Draw villain
+  ctx.drawImage(villainImg, villain.x, villain.y, villain.w, villain.h);
 
-  // hero shake
-  let shakeX=hero.shake?Math.random()*6-3:0;
-  if(hero.shake>0) hero.shake--;
-  hero.x=Math.max(0,Math.min(canvas.width-hero.w,hero.x));
-  ctx.drawImage(heroImg,hero.x+shakeX,hero.y,hero.w,hero.h);
+  // Hero bounds
+  hero.x = Math.max(0, Math.min(canvas.width - hero.w, hero.x));
 
-  if(state==="finish"){
-    ctx.font="bold 56px Arial";
-    ctx.textAlign="center";
-    ctx.fillText("FINISH",canvas.width/2,canvas.height/2);
+  // Hero shake
+  let shakeX = hero.shake ? Math.random()*6 - 3 : 0;
+  if(hero.shake > 0) hero.shake--;
+
+  ctx.drawImage(heroImg, hero.x + shakeX, hero.y, hero.w, hero.h);
+
+  if(state === "finish"){
+    ctx.font = "bold 56px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("FINISH", canvas.width/2, canvas.height/2);
   }
 
   frame++;
   requestAnimationFrame(loop);
 }
+
 loop();
 </script>
 
