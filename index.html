@@ -20,11 +20,25 @@ body{
   position:fixed;
   top:10px;
   width:100%;
-  text-align:center;
   z-index:10;
 }
 
-#life{color:#ff7675}
+#title{
+  text-align:center;
+  font-weight:bold;
+}
+
+#score{
+  position:fixed;
+  top:10px;
+  right:12px;
+  font-size:16px;
+}
+
+#life{
+  text-align:center;
+  color:#ff7675;
+}
 
 canvas{display:block}
 
@@ -47,7 +61,7 @@ canvas{display:block}
   bottom:20px;
   left:0;
   width:100%;
-  padding:0 20px;
+  padding:0 35px 0 20px;
   display:flex;
   justify-content:space-between;
   z-index:10;
@@ -57,9 +71,13 @@ canvas{display:block}
   width:70px;
   height:70px;
   border-radius:50%;
-  background:rgba(255,255,255,0.18);
+  background:rgba(255,255,255,0.2);
   border:none;
   position:relative;
+}
+
+.ctrlBtn:active{
+  background:rgba(255,255,255,0.4);
 }
 
 .ctrlBtn::before{
@@ -109,7 +127,7 @@ canvas{display:block}
 <div id="loading">LOADING…</div>
 
 <div id="ui">
-  <b>মির্জা সাহেব কে বাঁচাও</b>
+  <div id="title">মির্জা সাহেব কে বাঁচাও</div>
   <div id="score">Score: 0</div>
   <div id="life">❤️❤️❤️</div>
 </div>
@@ -128,13 +146,13 @@ canvas{display:block}
 </div>
 
 <script>
-/* ===== CANVAS ===== */
+/* CANVAS */
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
 canvas.width=innerWidth;
 canvas.height=innerHeight;
 
-/* ===== IMAGES ===== */
+/* IMAGES */
 let loaded=0;
 const heroImg=new Image();
 const heroHitImg=new Image();
@@ -144,80 +162,69 @@ heroImg.src="mirza.png";
 heroHitImg.src="hit.png";
 villainImg.src="nasir.png";
 
-heroImg.onload=checkLoad;
-heroHitImg.onload=checkLoad;
-villainImg.onload=checkLoad;
+[heroImg,heroHitImg,villainImg].forEach(img=>{
+  img.onload=()=>{loaded++;if(loaded===3)loading.style.display="none";}
+});
 
-function checkLoad(){
-  loaded++;
-  if(loaded===3){
-    document.getElementById("loading").style.display="none";
-  }
-}
-
-/* ===== AUDIO ===== */
+/* AUDIO */
 const bgMusic=new Audio("game.mp3");
 bgMusic.loop=true;
-bgMusic.volume=0.5;
+bgMusic.volume=0.7;
 
 const hitSound=new Audio("hit.mp3");
-hitSound.volume=0.8;
+hitSound.volume=1;
 
-/* ===== STATE ===== */
+/* STATE */
 let state="idle";
 let score=0,frame=0,difficulty=1,lives=3;
 
-/* ===== HERO ===== */
+/* HERO */
 let hero={
-  x:canvas.width/2-30,
-  y:canvas.height-110,
-  w:60,h:80,
+  x:canvas.width/2-40,
+  y:canvas.height-140,
+  w:80,h:110,
   speed:6,
   shake:0
 };
 
-/* ===== VILLAIN ===== */
+/* VILLAIN */
 let villain={
-  x:canvas.width/2-40,
+  x:canvas.width/2-55,
   y:20,
-  w:80,h:100,
+  w:110,h:140,
   dir:1,
   speed:3
 };
 
 let bullets=[];
 
-/* ===== START ===== */
-const startBtn=document.getElementById("startBtn");
+/* START */
 startBtn.onclick=()=>{
   state="play";
   score=0;frame=0;difficulty=1;lives=3;
   bullets=[];
   hero.x=canvas.width/2-hero.w/2;
-  document.getElementById("life").innerText="❤️❤️❤️";
-  document.getElementById("score").innerText="Score: 0";
+  life.innerText="❤️❤️❤️";
+  scoreDiv.innerText="Score: 0";
   bgMusic.currentTime=0;
-  bgMusic.play();
+  bgMusic.play().catch(()=>{});
   startBtn.style.display="none";
 };
 
-/* ===== CONTROLS ===== */
-let moveLeft=false, moveRight=false;
+/* CONTROLS */
+let moveLeft=false,moveRight=false;
 
-leftBtn.onmousedown=()=>moveLeft=true;
-rightBtn.onmousedown=()=>moveRight=true;
-leftBtn.onmouseup=rightBtn.onmouseup=()=>{moveLeft=false;moveRight=false};
+function bind(btn,dir){
+  btn.addEventListener("touchstart",e=>{e.preventDefault();dir(true);});
+  btn.addEventListener("touchend",e=>{e.preventDefault();dir(false);});
+  btn.addEventListener("mousedown",()=>dir(true));
+  btn.addEventListener("mouseup",()=>dir(false));
+}
 
-document.addEventListener("keydown",e=>{
-  if(e.code==="ArrowLeft")moveLeft=true;
-  if(e.code==="ArrowRight")moveRight=true;
-});
-document.addEventListener("keyup",e=>{
-  if(e.code==="ArrowLeft")moveLeft=false;
-  if(e.code==="ArrowRight")moveRight=false;
-});
+bind(leftBtn,v=>moveLeft=v);
+bind(rightBtn,v=>moveRight=v);
 
-/* ===== SHOOT ===== */
+/* SHOOT */
 function shoot(){
   bullets.push({
     x:villain.x+villain.w/2,
@@ -226,14 +233,13 @@ function shoot(){
   });
 }
 
-/* ===== HIT ===== */
+/* HIT */
 function hit(){
   lives--;
   hero.shake=10;
   hitSound.currentTime=0;
   hitSound.play();
-  document.getElementById("life").innerText="❤️".repeat(lives);
-
+  life.innerText="❤️".repeat(lives);
   if(lives<=0){
     state="finish";
     bgMusic.pause();
@@ -241,7 +247,7 @@ function hit(){
   }
 }
 
-/* ===== LOOP ===== */
+/* LOOP */
 function loop(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
@@ -261,10 +267,7 @@ function loop(){
       ctx.arc(b.x,b.y,6,0,Math.PI*2);
       ctx.fill();
 
-      if(
-        hero.x<b.x+6&&hero.x+hero.w>b.x-6&&
-        hero.y<b.y+6&&hero.y+hero.h>b.y
-      ){
+      if(hero.x<b.x&&hero.x+hero.w>b.x&&hero.y<b.y&&hero.y+hero.h>b.y){
         hit();
         b.y=canvas.height+100;
       }
@@ -274,19 +277,19 @@ function loop(){
 
     score++;
     if(frame%300===0)difficulty+=0.3;
-    document.getElementById("score").innerText="Score: "+score;
+    scoreDiv.innerText="Score: "+score;
   }
 
   ctx.drawImage(villainImg,villain.x,villain.y,villain.w,villain.h);
 
   hero.x=Math.max(0,Math.min(canvas.width-hero.w,hero.x));
-  let shakeX=hero.shake?Math.random()*6-3:0;
+  let shake=hero.shake?Math.random()*6-3:0;
   if(hero.shake>0)hero.shake--;
 
   if(state==="finish"){
-    ctx.drawImage(heroHitImg,hero.x,hero.y,hero.w,hero.h);
+    ctx.drawImage(heroHitImg,hero.x-20,hero.y-20,hero.w+40,hero.h+40);
   }else{
-    ctx.drawImage(heroImg,hero.x+shakeX,hero.y,hero.w,hero.h);
+    ctx.drawImage(heroImg,hero.x+shake,hero.y,hero.w,hero.h);
   }
 
   if(state==="finish"){
