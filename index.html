@@ -23,10 +23,7 @@ body{
   z-index:10;
 }
 
-#title{
-  text-align:center;
-  font-weight:bold;
-}
+#title{text-align:center;font-weight:bold;}
 
 #score{
   position:fixed;
@@ -35,10 +32,7 @@ body{
   font-size:16px;
 }
 
-#life{
-  text-align:center;
-  color:#ff7675;
-}
+#life{text-align:center;color:#ff7675;}
 
 canvas{display:block}
 
@@ -61,7 +55,7 @@ canvas{display:block}
   bottom:20px;
   left:0;
   width:100%;
-  padding:0 35px 0 20px;
+  padding:0 20px;
   display:flex;
   justify-content:space-between;
   z-index:10;
@@ -76,9 +70,7 @@ canvas{display:block}
   position:relative;
 }
 
-.ctrlBtn:active{
-  background:rgba(255,255,255,0.4);
-}
+.ctrlBtn:active{background:rgba(255,255,255,0.4);}
 
 .ctrlBtn::before{
   content:"";
@@ -146,6 +138,10 @@ canvas{display:block}
 </div>
 
 <script>
+/* ELEMENT FIX (IMPORTANT) */
+const life = document.getElementById("life");
+const scoreDiv = document.getElementById("score");
+
 /* CANVAS */
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
@@ -214,11 +210,11 @@ startBtn.onclick=()=>{
 /* CONTROLS */
 let moveLeft=false,moveRight=false;
 
-function bind(btn,dir){
-  btn.addEventListener("touchstart",e=>{e.preventDefault();dir(true);});
-  btn.addEventListener("touchend",e=>{e.preventDefault();dir(false);});
-  btn.addEventListener("mousedown",()=>dir(true));
-  btn.addEventListener("mouseup",()=>dir(false));
+function bind(btn,fn){
+  btn.addEventListener("touchstart",e=>{e.preventDefault();fn(true);});
+  btn.addEventListener("touchend",e=>{e.preventDefault();fn(false);});
+  btn.addEventListener("mousedown",()=>fn(true));
+  btn.addEventListener("mouseup",()=>fn(false));
 }
 
 bind(leftBtn,v=>moveLeft=v);
@@ -240,6 +236,7 @@ function hit(){
   hitSound.currentTime=0;
   hitSound.play();
   life.innerText="❤️".repeat(lives);
+
   if(lives<=0){
     state="finish";
     bgMusic.pause();
@@ -290,12 +287,6 @@ function loop(){
     ctx.drawImage(heroHitImg,hero.x-20,hero.y-20,hero.w+40,hero.h+40);
   }else{
     ctx.drawImage(heroImg,hero.x+shake,hero.y,hero.w,hero.h);
-  }
-
-  if(state==="finish"){
-    ctx.font="bold 56px Arial";
-    ctx.textAlign="center";
-    ctx.fillText("FINISH",canvas.width/2,canvas.height/2);
   }
 
   frame++;
