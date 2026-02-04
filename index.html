@@ -13,7 +13,10 @@ body{
   background:linear-gradient(180deg,#0f2027,#203a43,#2c5364);
   color:white;
   touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
 }
+
 #ui{
   position:fixed;
   top:10px;
@@ -29,7 +32,7 @@ canvas{display:block}
 /* START */
 #startBtn{
   position:fixed;
-  bottom:130px;
+  bottom:140px;
   left:50%;
   transform:translateX(-50%);
   padding:14px 30px;
@@ -41,42 +44,81 @@ canvas{display:block}
   z-index:10;
 }
 
-/* ARROW CONTROLS */
+/* CONTROLS */
 #controls{
   position:fixed;
   bottom:20px;
-  width:100%;
+  left:50%;
+  transform:translateX(-50%);
+  width:220px;
   display:flex;
   justify-content:space-between;
-  padding:0 30px;
   z-index:10;
 }
+
 .ctrlBtn{
   width:70px;
   height:70px;
   border-radius:50%;
+  background:rgba(255,255,255,0.18);
   border:none;
-  font-size:32px;
-  background:rgba(255,255,255,0.15);
-  color:white;
+  position:relative;
+  touch-action:none;
 }
+
 .ctrlBtn:active{
   background:rgba(255,255,255,0.35);
+}
+
+/* CSS arrows (no emoji = no copy menu) */
+.ctrlBtn::before{
+  content:"";
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:0;
+  height:0;
+  border-style:solid;
+  transform:translate(-50%,-50%);
+}
+
+#leftBtn::before{
+  border-width:14px 18px 14px 0;
+  border-color:transparent white transparent transparent;
+}
+
+#rightBtn::before{
+  border-width:14px 0 14px 18px;
+  border-color:transparent transparent transparent white;
 }
 
 /* FOOTER */
 #footer{
   position:fixed;
-  bottom:8px;
+  bottom:6px;
   width:100%;
   text-align:center;
   font-size:13px;
 }
 #footer span{color:#00ffd5;font-weight:bold;}
+
+/* LOADING */
+#loading{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:26px;
+  background:#0f2027;
+  z-index:20;
+}
 </style>
 </head>
 
 <body>
+
+<div id="loading">LOADING…</div>
 
 <div id="ui">
   <b>মির্জা সাহেব কে বাঁচাও</b>
@@ -86,12 +128,11 @@ canvas{display:block}
 
 <canvas id="game"></canvas>
 
-<button id="startBtn" onclick="startGame()">START</button>
+<button id="startBtn">START</button>
 
-<!-- Arrow Buttons -->
 <div id="controls">
-  <button class="ctrlBtn" id="leftBtn">⬅️</button>
-  <button class="ctrlBtn" id="rightBtn">➡️</button>
+  <div class="ctrlBtn" id="leftBtn"></div>
+  <div class="ctrlBtn" id="rightBtn"></div>
 </div>
 
 <div id="footer">
@@ -99,23 +140,36 @@ canvas{display:block}
 </div>
 
 <script>
-/* ========== SETUP ========== */
+/* ===== CANVAS ===== */
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
 canvas.width=innerWidth;
 canvas.height=innerHeight;
 
+/* ===== IMAGES (PRELOAD) ===== */
+let loaded=0;
 const heroImg=new Image();
-heroImg.src="mirza.png";
 const villainImg=new Image();
+
+heroImg.src="mirza.png";
 villainImg.src="nasir.png";
 
-/* ========== GAME STATE ========== */
+heroImg.onload=checkLoad;
+villainImg.onload=checkLoad;
+
+function checkLoad(){
+  loaded++;
+  if(loaded===2){
+    document.getElementById("loading").style.display="none";
+  }
+}
+
+/* ===== GAME STATE ===== */
 let state="idle";
 let score=0,frame=0,difficulty=1;
 let lives=3;
 
-/* ========== HERO ========== */
+/* ===== HERO ===== */
 let hero={
   x:canvas.width/2-30,
   y:canvas.height-110,
@@ -124,7 +178,7 @@ let hero={
   shake:0
 };
 
-/* ========== VILLAIN ========== */
+/* ===== VILLAIN ===== */
 let villain={
   x:canvas.width/2-40,
   y:20,
@@ -134,42 +188,45 @@ let villain={
 
 let bullets=[];
 
-/* ========== START ========== */
-function startGame(){
+/* ===== START ===== */
+const startBtn=document.getElementById("startBtn");
+startBtn.onclick=()=>{
   state="play";
   score=0;frame=0;difficulty=1;lives=3;
   bullets=[];
   hero.x=canvas.width/2-hero.w/2;
   document.getElementById("life").innerText="❤️❤️❤️";
   document.getElementById("score").innerText="Score: 0";
-  document.getElementById("startBtn").style.display="none";
-}
+  startBtn.style.display="none";
+};
 
-/* ========== KEYBOARD ========== */
-document.addEventListener("keydown",e=>{
-  if(state!=="play")return;
-  if(e.code==="ArrowLeft")hero.x-=hero.speed;
-  if(e.code==="ArrowRight")hero.x+=hero.speed;
-});
-
-/* ========== TOUCH BUTTON CONTROL ========== */
+/* ===== ARROW CONTROL ===== */
 let moveLeft=false, moveRight=false;
 
 const leftBtn=document.getElementById("leftBtn");
 const rightBtn=document.getElementById("rightBtn");
 
-leftBtn.addEventListener("touchstart",()=>moveLeft=true);
-leftBtn.addEventListener("touchend",()=>moveLeft=false);
-rightBtn.addEventListener("touchstart",()=>moveRight=true);
-rightBtn.addEventListener("touchend",()=>moveRight=false);
+["touchstart","mousedown"].forEach(e=>{
+  leftBtn.addEventListener(e,()=>moveLeft=true);
+  rightBtn.addEventListener(e,()=>moveRight=true);
+});
+["touchend","mouseup","mouseleave"].forEach(e=>{
+  leftBtn.addEventListener(e,()=>moveLeft=false);
+  rightBtn.addEventListener(e,()=>moveRight=false);
+});
 
-/* Desktop click support */
-leftBtn.addEventListener("mousedown",()=>moveLeft=true);
-leftBtn.addEventListener("mouseup",()=>moveLeft=false);
-rightBtn.addEventListener("mousedown",()=>moveRight=true);
-rightBtn.addEventListener("mouseup",()=>moveRight=false);
+/* ===== KEYBOARD ===== */
+document.addEventListener("keydown",e=>{
+  if(state!=="play")return;
+  if(e.code==="ArrowLeft")moveLeft=true;
+  if(e.code==="ArrowRight")moveRight=true;
+});
+document.addEventListener("keyup",e=>{
+  if(e.code==="ArrowLeft")moveLeft=false;
+  if(e.code==="ArrowRight")moveRight=false;
+});
 
-/* ========== SHOOT ========== */
+/* ===== SHOOT ===== */
 function shoot(){
   bullets.push({
     x:villain.x+villain.w/2,
@@ -178,7 +235,7 @@ function shoot(){
   });
 }
 
-/* ========== HIT ========== */
+/* ===== HIT ===== */
 function hit(){
   lives--;
   hero.shake=10;
@@ -186,20 +243,18 @@ function hit(){
   document.getElementById("life").innerText="❤️".repeat(lives);
   if(lives<=0){
     state="finish";
-    document.getElementById("startBtn").style.display="block";
+    startBtn.style.display="block";
   }
 }
 
-/* ========== LOOP ========== */
+/* ===== LOOP ===== */
 function loop(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
   if(state==="play"){
-    /* Arrow movement */
-    if(moveLeft) hero.x-=hero.speed;
-    if(moveRight) hero.x+=hero.speed;
+    if(moveLeft)hero.x-=hero.speed;
+    if(moveRight)hero.x+=hero.speed;
 
-    /* Villain */
     villain.x+=villain.dir*villain.speed*difficulty;
     if(villain.x<=0||villain.x+villain.w>=canvas.width)villain.dir*=-1;
 
@@ -228,10 +283,8 @@ function loop(){
     document.getElementById("score").innerText="Score: "+score;
   }
 
-  /* Draw villain */
   ctx.drawImage(villainImg,villain.x,villain.y,villain.w,villain.h);
 
-  /* Hero bounds + shake */
   hero.x=Math.max(0,Math.min(canvas.width-hero.w,hero.x));
   let shakeX=hero.shake?Math.random()*6-3:0;
   if(hero.shake>0)hero.shake--;
