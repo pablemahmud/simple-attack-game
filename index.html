@@ -3,76 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simple Attack Game</title>
+<title>মির্জা সাহেব কে বাঁচাও</title>
 
 <style>
 body {
-  background: #111;
-  color: white;
-  text-align: center;
-  font-family: Arial, sans-serif;
   margin: 0;
-  padding-bottom: 50px;
-}
-
-h1 {
-  margin: 15px 0;
-}
-
-.game {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  margin-top: 30px;
-}
-
-.character img {
-  width: 40vw;
-  max-width: 180px;
-  border: 3px solid white;
-  border-radius: 12px;
-}
-
-#hp {
-  margin-top: 8px;
-  font-size: 18px;
-  color: yellow;
-}
-
-button {
-  margin-top: 30px;
-  padding: 15px 40px;
-  font-size: 20px;
-  border: none;
-  border-radius: 8px;
-  background: crimson;
+  overflow: hidden;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(180deg, #0f2027, #203a43, #2c5364);
   color: white;
 }
 
-button:active {
-  transform: scale(0.95);
-}
-
-#win {
-  font-size: 30px;
-  color: lime;
-  margin-top: 20px;
-  display: none;
-}
-
-/* footer style */
-.footer {
+#ui {
   position: fixed;
-  bottom: 10px;
+  top: 10px;
   width: 100%;
   text-align: center;
-  font-size: 14px;
-  color: #aaa;
-  letter-spacing: 1px;
+  z-index: 10;
 }
 
-.footer span {
-  color: #00ffcc;
+#title {
+  font-size: 22px;
+  font-weight: bold;
+}
+
+#score {
+  font-size: 18px;
+  margin-top: 5px;
+}
+
+canvas {
+  display: block;
+}
+
+#footer {
+  position: fixed;
+  bottom: 8px;
+  width: 100%;
+  text-align: center;
+  font-size: 13px;
+  color: #aaa;
+}
+
+#footer span {
+  color: #00ffd5;
   font-weight: bold;
 }
 </style>
@@ -80,45 +54,132 @@ button:active {
 
 <body>
 
-<h1>Simple Attack Game</h1>
-
-<div class="game">
-  <div class="character">
-    <img src="hero.png">
-    <div>HERO</div>
-  </div>
-
-  <div class="character">
-    <img src="villain.png" id="villain">
-    <div>VILLAIN</div>
-    <div id="hp">HP: 50</div>
-  </div>
+<div id="ui">
+  <div id="title">মির্জা সাহেব কে বাঁচাও</div>
+  <div id="score">Score: 0</div>
 </div>
 
-<button onclick="attack()">ATTACK</button>
+<canvas id="game"></canvas>
 
-<div id="win">🎉 YOU WIN 🎉</div>
-
-<div class="footer">
+<div id="footer">
   Developed by <span>Mahmud Gaming</span>
 </div>
 
 <script>
-let villainHP = 50;
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-function attack() {
-  villainHP -= 10;
-  document.getElementById("hp").innerText = "HP: " + villainHP;
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-  let v = document.getElementById("villain");
-  v.style.transform = "translateX(-10px)";
-  setTimeout(() => v.style.transform = "translateX(10px)", 50);
-  setTimeout(() => v.style.transform = "translateX(0)", 100);
+let ground = canvas.height - 120;
 
-  if (villainHP <= 0) {
-    document.getElementById("win").style.display = "block";
+// Player (Mirza)
+let player = {
+  x: 80,
+  y: ground,
+  w: 40,
+  h: 60,
+  vy: 0,
+  jump: false
+};
+
+// Obstacles (Nasir effect)
+let obstacles = [];
+let speed = 6;
+let gravity = 1;
+let score = 0;
+let frame = 0;
+let gameOver = false;
+
+// Controls
+document.addEventListener("click", jump);
+document.addEventListener("keydown", e => {
+  if (e.code === "Space") jump();
+});
+
+function jump() {
+  if (!player.jump) {
+    player.vy = -18;
+    player.jump = true;
   }
 }
+
+function spawnObstacle() {
+  obstacles.push({
+    x: canvas.width,
+    y: ground + 20,
+    w: 30,
+    h: 40
+  });
+}
+
+function update() {
+  if (gameOver) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Ground
+  ctx.fillStyle = "#111";
+  ctx.fillRect(0, ground + 60, canvas.width, 5);
+
+  // Player physics
+  player.vy += gravity;
+  player.y += player.vy;
+
+  if (player.y >= ground) {
+    player.y = ground;
+    player.vy = 0;
+    player.jump = false;
+  }
+
+  // Draw player
+  ctx.fillStyle = "#00ffcc";
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+
+  // Obstacles
+  for (let i = 0; i < obstacles.length; i++) {
+    let o = obstacles[i];
+    o.x -= speed;
+
+    ctx.fillStyle = "#ff4757";
+    ctx.fillRect(o.x, o.y, o.w, o.h);
+
+    // Collision
+    if (
+      player.x < o.x + o.w &&
+      player.x + player.w > o.x &&
+      player.y < o.y + o.h &&
+      player.y + player.h > o.y
+    ) {
+      gameOver = true;
+      alert("Game Over!\nScore: " + score);
+      location.reload();
+    }
+  }
+
+  // Remove offscreen obstacles
+  obstacles = obstacles.filter(o => o.x + o.w > 0);
+
+  // Spawn logic
+  if (frame % 90 === 0) {
+    spawnObstacle();
+  }
+
+  // Difficulty increase
+  if (frame % 300 === 0) {
+    speed += 0.5;
+  }
+
+  // Score
+  score++;
+  document.getElementById("score").innerText = "Score: " + score;
+
+  frame++;
+  requestAnimationFrame(update);
+}
+
+update();
 </script>
 
 </body>
