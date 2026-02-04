@@ -94,9 +94,9 @@ canvas{display:block}
   border-color:transparent transparent transparent white;
 }
 
-/* 👉 RIGHT BUTTON FINAL POSITION */
+/* 👉 RIGHT BUTTON SLIGHTLY MORE RIGHT */
 #rightBtn{
-  margin-right:2px;
+  margin-right:0px;
 }
 
 /* FOOTER */
@@ -302,6 +302,13 @@ function loop(){
       bigW,
       bigH
     );
+
+    /* 🎯 CENTER SCORE */
+    ctx.font="bold 36px Arial";
+    ctx.fillStyle="#00ffd5";
+    ctx.textAlign="center";
+    ctx.fillText("Final Score: "+score, canvas.width/2, canvas.height/2 + bigH/2 + 50);
+
     ctx.restore();
   }else{
     ctx.drawImage(heroImg,hero.x+shake,hero.y,hero.w,hero.h);
