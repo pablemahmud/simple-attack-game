@@ -1,16 +1,74 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>মির্জা সাহেব কে বাঁচাও</title>
+
+<style>
+body{
+  margin:0;
+  overflow:hidden;
+  font-family:Arial,sans-serif;
+  background:linear-gradient(180deg,#0f2027,#203a43,#2c5364);
+  color:white;
+}
+#ui{
+  position:fixed;
+  top:10px;
+  width:100%;
+  text-align:center;
+  z-index:10;
+}
+#score{margin-top:6px}
+canvas{display:block}
+
+#startBtn{
+  position:fixed;
+  bottom:80px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:14px 30px;
+  font-size:18px;
+  border:none;
+  border-radius:10px;
+  background:#ff4757;
+  color:white;
+}
+
+#footer{
+  position:fixed;
+  bottom:8px;
+  width:100%;
+  text-align:center;
+  font-size:13px;
+}
+#footer span{color:#00ffd5;font-weight:bold;}
+</style>
+</head>
+
+<body>
+
+<div id="ui">
+  <b>মির্জা সাহেব কে বাঁচাও</b>
+  <div id="score">Score: 0</div>
+</div>
+
+<canvas id="game"></canvas>
+
+<button id="startBtn" onclick="startGame()">START</button>
+
+<div id="footer">
+  Developed by <span>Mahmud Gaming</span>
+</div>
+
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 canvas.width = innerWidth;
 canvas.height = innerHeight;
 
-let ground = canvas.height - 140;
-let running = false;
-let finished = false;
-
-let score = 0;
-let speed = 2; // slow start
-let frame = 0;
+const ground = canvas.height - 150;
 
 const heroImg = new Image();
 heroImg.src = "mirza.png";
@@ -18,160 +76,162 @@ heroImg.src = "mirza.png";
 const villainImg = new Image();
 villainImg.src = "nasir.png";
 
-let player = {
+const ballImg = new Image();
+ballImg.src = "ball.png";
+
+let state = "idle"; // idle, countdown, play, finish
+let countdown = 3;
+
+let score = 0;
+let frame = 0;
+let speed = 2;
+
+let hero = {
   x: 80,
   y: ground,
   w: 60,
   h: 80,
   vy: 0,
   jumping: false,
-  low: false,
   runTick: 0
 };
 
-// villain fixed position
 let villain = {
-  x: canvas.width - 120,
-  y: ground - 120,
-  w: 80,
-  h: 100
+  x: canvas.width - 140,
+  y: ground - 110,
+  w: 90,
+  h: 110
 };
 
 let balls = [];
 const gravity = 1;
 
-/* ---------- GAME CONTROL ---------- */
-function startGame() {
-  running = true;
-  finished = false;
+/* -------- START GAME -------- */
+function startGame(){
+  state = "countdown";
+  countdown = 3;
   score = 0;
-  speed = 2;
   frame = 0;
+  speed = 2;
   balls = [];
-  player.y = ground;
-  player.vy = 0;
-  document.getElementById("score").innerText = "Score: 0";
+  hero.y = ground;
+  hero.vy = 0;
+  document.getElementById("startBtn").style.display="none";
+  document.getElementById("score").innerText="Score: 0";
 }
 
-/* ---------- INPUT ---------- */
-function jump() {
-  if (!running) return;
-  if (!player.jumping && !player.low) {
-    player.vy = -18;
-    player.jumping = true;
+/* -------- INPUT -------- */
+document.addEventListener("click", ()=>{
+  if(state!=="play") return;
+  if(!hero.jumping){
+    hero.vy = -18;
+    hero.jumping = true;
     navigator.vibrate?.(30);
   }
-}
-
-function low() {
-  if (!running) return;
-  if (!player.jumping) {
-    player.low = true;
-    player.h = 45;
-  }
-}
-
-function stand() {
-  player.low = false;
-  player.h = 80;
-}
-
-document.addEventListener("click", jump);
-document.addEventListener("keydown", e => {
-  if (e.code === "Space") jump();
-  if (e.code === "ArrowDown") low();
-});
-document.addEventListener("keyup", e => {
-  if (e.code === "ArrowDown") stand();
 });
 
-/* ---------- PROJECTILE ---------- */
-function throwBall() {
+/* -------- THROW BALL -------- */
+function throwBall(){
   balls.push({
     x: villain.x,
     y: villain.y + 30,
-    r: 12,
-    vx: -speed - 2
+    vx: -speed - 2,
+    vy: -8
   });
 }
 
-/* ---------- GAME LOOP ---------- */
-function loop() {
+/* -------- GAME LOOP -------- */
+function loop(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // villain draw (fixed)
-  ctx.drawImage(villainImg, villain.x, villain.y, villain.w, villain.h);
+  // villain (fixed)
+  ctx.drawImage(villainImg,villain.x,villain.y,villain.w,villain.h);
 
-  if (running && !finished) {
-
-    // slow → fast progression
-    if (frame % 300 === 0 && speed < 8) {
-      speed += 0.5;
+  if(state==="countdown"){
+    ctx.font="bold 60px Arial";
+    ctx.textAlign="center";
+    ctx.fillText(countdown,canvas.width/2,canvas.height/2);
+    if(frame%60===0){
+      countdown--;
+      if(countdown===0){
+        state="play";
+      }
     }
+  }
+
+  if(state==="play"){
+    // difficulty
+    if(frame%300===0) speed+=0.4;
 
     // hero physics
-    player.vy += gravity;
-    player.y += player.vy;
-
-    if (player.y >= ground) {
-      player.y = ground;
-      player.vy = 0;
-      player.jumping = false;
+    hero.vy+=gravity;
+    hero.y+=hero.vy;
+    if(hero.y>=ground){
+      hero.y=ground;
+      hero.vy=0;
+      hero.jumping=false;
     }
 
-    // fake running animation
-    player.runTick++;
-    let runOffset = Math.sin(player.runTick * 0.3) * 4;
+    hero.runTick++;
 
-    // throw balls
-    if (frame % 120 === 0) throwBall();
+    // throw ball
+    if(frame%120===0) throwBall();
 
-    balls.forEach(b => {
-      b.x += b.vx;
+    balls.forEach(b=>{
+      b.x+=b.vx;
+      b.y+=b.vy;
+      b.vy+=0.5;
 
       // collision
-      if (
-        player.x < b.x + b.r &&
-        player.x + player.w > b.x - b.r &&
-        player.y < b.y + b.r &&
-        player.y + player.h > b.y - b.r
-      ) {
+      if(
+        hero.x < b.x+20 &&
+        hero.x+hero.w > b.x &&
+        hero.y < b.y+20 &&
+        hero.y+hero.h > b.y
+      ){
         navigator.vibrate?.([100,50,100]);
-        finished = true;
+        state="finish";
       }
 
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
-      ctx.fillStyle = "#ff4757";
-      ctx.fill();
+      if(ballImg.complete){
+        ctx.drawImage(ballImg,b.x,b.y,24,24);
+      }else{
+        ctx.fillStyle="red";
+        ctx.beginPath();
+        ctx.arc(b.x,b.y,10,0,Math.PI*2);
+        ctx.fill();
+      }
     });
 
-    balls = balls.filter(b => b.x > -20);
-
+    balls = balls.filter(b=>b.x>-50);
     score++;
-    document.getElementById("score").innerText = "Score: " + score;
-    frame++;
+    document.getElementById("score").innerText="Score: "+score;
   }
 
-  // hero draw (animated)
+  // hero draw (run / jump visual)
+  let runScale = hero.jumping ? 1 : 1 + Math.sin(hero.runTick*0.3)*0.05;
   ctx.drawImage(
     heroImg,
-    player.x,
-    player.y + (player.jumping ? 0 : Math.sin(player.runTick*0.3)*4),
-    player.w,
-    player.h
+    hero.x,
+    hero.y,
+    hero.w*runScale,
+    hero.h
   );
 
-  // FINISH text
-  if (finished) {
-    ctx.fillStyle = "white";
-    ctx.font = "bold 48px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("FINISH", canvas.width/2, canvas.height/2);
+  // FINISH
+  if(state==="finish"){
+    ctx.font="bold 56px Arial";
+    ctx.textAlign="center";
+    ctx.fillText("FINISH",canvas.width/2,canvas.height/2);
+    document.getElementById("startBtn").style.display="block";
   }
 
+  frame++;
   requestAnimationFrame(loop);
 }
 
 loop();
 </script>
+
+</body>
+</html>
