@@ -56,7 +56,7 @@ canvas{display:block}
   width:100%;
   max-width:100vw;
   box-sizing:border-box;
-  padding:0 60px 0 20px; /* ডান দিক নিশ্চিতভাবে ভেতরে */
+  padding:0 60px 0 20px;
   display:flex;
   justify-content:space-between;
   z-index:10;
@@ -94,9 +94,25 @@ canvas{display:block}
   border-color:transparent transparent transparent white;
 }
 
-/* 🔥 HARD FIX: RIGHT BUTTON ALWAYS INSIDE */
+/* 👉 RIGHT BUTTON FINAL POSITION */
 #rightBtn{
   margin-right:2px;
+}
+
+/* FOOTER */
+#footer{
+  position:fixed;
+  bottom:6px;
+  width:100%;
+  text-align:center;
+  font-size:13px;
+  color:#ffffffaa;
+  z-index:10;
+}
+
+#footer span{
+  color:#00ffd5;
+  font-weight:bold;
 }
 </style>
 </head>
@@ -115,6 +131,10 @@ canvas{display:block}
 <div id="controls">
   <div class="ctrlBtn" id="leftBtn"></div>
   <div class="ctrlBtn" id="rightBtn"></div>
+</div>
+
+<div id="footer">
+  Developed by <span>Mahmud Gaming</span>
 </div>
 
 <script>
