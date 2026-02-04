@@ -111,71 +111,96 @@ canvas{display:block}
 </div>
 
 <script>
-const life=document.getElementById("life");
-const scoreDiv=document.getElementById("score");
+/* UI */
+const life = document.getElementById("life");
+const scoreDiv = document.getElementById("score");
+const startBtn = document.getElementById("startBtn");
 
 /* CANVAS */
-const canvas=document.getElementById("game");
-const ctx=canvas.getContext("2d");
-canvas.width=innerWidth;
-canvas.height=innerHeight;
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+canvas.width = innerWidth;
+canvas.height = innerHeight;
 
 /* IMAGES */
-const heroImg=new Image();
-const heroHitImg=new Image();
-const villainImg=new Image();
-heroImg.src="mirza.png";
-heroHitImg.src="hit.png";
-villainImg.src="nasir.png";
+const heroImg = new Image();
+const heroHitImg = new Image();
+const villainImg = new Image();
+heroImg.src = "mirza.png";
+heroHitImg.src = "hit.png";
+villainImg.src = "nasir.png";
 
-/* AUDIO */
-const bgMusic=new Audio("game.mp3");
-bgMusic.loop=true;
-bgMusic.volume=0.8;
-bgMusic.muted=false;
-bgMusic.load();
+/* AUDIO (mobile safe) */
+const bgMusic = new Audio("game.mp3");
+bgMusic.loop = true;
+bgMusic.volume = 0.8;
 
-const hitSound=new Audio("hit.mp3");
+const hitSound = new Audio("hit.mp3");
 
 /* STATE */
-let state="idle";
-let score=0,frame=0,difficulty=1,lives=3;
+let state = "idle";
+let score = 0;
+let frame = 0;
+let lives = 3;
+
+/* SHOOT FREQUENCY CONTROL */
+let shootInterval = 120; // শুরুতে ধীরে
 
 /* HERO */
-let hero={
-  x:canvas.width/2-40,
-  y:canvas.height-140,
-  w:80,h:110,
-  speed:6,
-  shake:0
+let hero = {
+  x: canvas.width/2 - 40,
+  y: canvas.height - 140,
+  w: 80,
+  h: 110,
+  speed: 6,
+  shake: 0
 };
 
-/* VILLAIN (BIGGER) */
-let villain={
-  x:canvas.width/2-65,
-  y:20,
-  w:130,h:170,
-  dir:1,
-  speed:3
+/* VILLAIN */
+let villain = {
+  x: canvas.width/2 - 65,
+  y: 20,
+  w: 130,
+  h: 170,
+  dir: 1,
+  speed: 3
 };
 
-let bullets=[];
+let bullets = [];
+
+/* AUDIO UNLOCK (IMPORTANT) */
+function unlockAudio(){
+  bgMusic.play().then(()=>{
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
+  }).catch(()=>{});
+  document.removeEventListener("touchstart", unlockAudio);
+  document.removeEventListener("click", unlockAudio);
+}
+document.addEventListener("touchstart", unlockAudio);
+document.addEventListener("click", unlockAudio);
 
 /* START */
-startBtn.onclick=()=>{
-  state="play";
-  score=0;frame=0;difficulty=1;lives=3;
-  bullets=[];
-  hero.x=canvas.width/2-hero.w/2;
-  life.innerText="❤️❤️❤️";
-  scoreDiv.innerText="Score: 0";
-  bgMusic.currentTime=0;
-  bgMusic.play().catch(()=>{});
-  startBtn.style.display="none";
+startBtn.onclick = ()=>{
+  state = "play";
+  score = 0;
+  frame = 0;
+  lives = 3;
+  bullets = [];
+  shootInterval = 120;
+
+  hero.x = canvas.width/2 - hero.w/2;
+  life.innerText = "❤️❤️❤️";
+  scoreDiv.innerText = "Score: 0";
+
+  bgMusic.currentTime = 0;
+  bgMusic.play();
+
+  startBtn.style.display = "none";
 };
 
 /* CONTROLS */
-let moveLeft=false,moveRight=false;
+let moveLeft=false, moveRight=false;
 
 function bind(btn,fn){
   btn.addEventListener("touchstart",e=>{e.preventDefault();fn(true);});
@@ -183,32 +208,32 @@ function bind(btn,fn){
   btn.addEventListener("mousedown",()=>fn(true));
   btn.addEventListener("mouseup",()=>fn(false));
 }
-
 bind(leftBtn,v=>moveLeft=v);
 bind(rightBtn,v=>moveRight=v);
 
-/* SHOOT */
+/* SHOOT (speed constant) */
 function shoot(){
   bullets.push({
-    x:villain.x+villain.w/2,
-    y:villain.y+villain.h,
-    vy:6 + difficulty*3
+    x: villain.x + villain.w/2,
+    y: villain.y + villain.h,
+    vy: 7 // স্পিড ফিক্সড
   });
 }
 
 /* HIT */
 function hit(){
   lives--;
-  hero.shake=12;
-  hitSound.currentTime=0;
+  hero.shake = 12;
+  hitSound.currentTime = 0;
   hitSound.play();
   navigator.vibrate?.([120]);
-  life.innerText="❤️".repeat(lives);
 
-  if(lives<=0){
-    state="finish";
+  life.innerText = "❤️".repeat(lives);
+
+  if(lives <= 0){
+    state = "finish";
     bgMusic.pause();
-    startBtn.style.display="block";
+    startBtn.style.display = "block";
   }
 }
 
@@ -216,50 +241,58 @@ function hit(){
 function loop(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  if(state==="play"){
-    if(moveLeft)hero.x-=hero.speed;
-    if(moveRight)hero.x+=hero.speed;
+  if(state === "play"){
+    if(moveLeft) hero.x -= hero.speed;
+    if(moveRight) hero.x += hero.speed;
 
-    villain.x+=villain.dir*villain.speed;
-    if(villain.x<=0||villain.x+villain.w>=canvas.width)villain.dir*=-1;
+    villain.x += villain.dir * villain.speed;
+    if(villain.x <= 0 || villain.x + villain.w >= canvas.width){
+      villain.dir *= -1;
+    }
 
-    if(frame%Math.max(20,100-difficulty*8)===0)shoot();
+    /* SHOOT FREQUENCY (ONLY) */
+    if(frame % shootInterval === 0){
+      shoot();
+    }
 
     bullets.forEach(b=>{
-      b.y+=b.vy;
-      ctx.fillStyle="gold";
+      b.y += b.vy;
+      ctx.fillStyle = "gold";
       ctx.beginPath();
       ctx.arc(b.x,b.y,6,0,Math.PI*2);
       ctx.fill();
 
-      if(hero.x<b.x&&hero.x+hero.w>b.x&&hero.y<b.y&&hero.y+hero.h>b.y){
+      if(hero.x < b.x && hero.x+hero.w > b.x &&
+         hero.y < b.y && hero.y+hero.h > b.y){
         hit();
-        b.y=canvas.height+200;
+        b.y = canvas.height + 200;
       }
     });
 
-    bullets=bullets.filter(b=>b.y<canvas.height+100);
+    bullets = bullets.filter(b=>b.y < canvas.height+100);
 
     score++;
-    if(frame%200===0)difficulty+=0.6;
-    scoreDiv.innerText="Score: "+score;
+    scoreDiv.innerText = "Score: " + score;
+
+    /* EVERY TIME -> FREQUENCY INCREASE */
+    if(frame % 200 === 0){
+      shootInterval = Math.max(15, shootInterval - 10);
+    }
   }
 
-  ctx.drawImage(villainImg,villain.x,villain.y,villain.w,villain.h);
+  ctx.drawImage(villainImg, villain.x, villain.y, villain.w, villain.h);
 
-  hero.x=Math.max(0,Math.min(canvas.width-hero.w,hero.x));
-  let shake=hero.shake?Math.random()*8-4:0;
-  if(hero.shake>0)hero.shake--;
+  hero.x = Math.max(0, Math.min(canvas.width-hero.w, hero.x));
+  let shake = hero.shake ? Math.random()*8-4 : 0;
+  if(hero.shake>0) hero.shake--;
 
-  if(state==="finish"){
+  if(state === "finish"){
     ctx.drawImage(heroHitImg,
-      hero.x-40,
-      hero.y-40,
-      hero.w+80,
-      hero.h+80
+      hero.x-40, hero.y-40,
+      hero.w+80, hero.h+80
     );
   }else{
-    ctx.drawImage(heroImg,hero.x+shake,hero.y,hero.w,hero.h);
+    ctx.drawImage(heroImg, hero.x+shake, hero.y, hero.w, hero.h);
   }
 
   frame++;
