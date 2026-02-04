@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simple Attack Game</title>
+
+<style>
+body {
+  background: #111;
+  color: white;
+  text-align: center;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding-bottom: 50px;
+}
+
+h1 {
+  margin: 15px 0;
+}
+
+.game {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-top: 30px;
+}
+
+.character img {
+  width: 40vw;
+  max-width: 180px;
+  border: 3px solid white;
+  border-radius: 12px;
+}
+
+#hp {
+  margin-top: 8px;
+  font-size: 18px;
+  color: yellow;
+}
+
+button {
+  margin-top: 30px;
+  padding: 15px 40px;
+  font-size: 20px;
+  border: none;
+  border-radius: 8px;
+  background: crimson;
+  color: white;
+}
+
+button:active {
+  transform: scale(0.95);
+}
+
+#win {
+  font-size: 30px;
+  color: lime;
+  margin-top: 20px;
+  display: none;
+}
+
+/* footer style */
+.footer {
+  position: fixed;
+  bottom: 10px;
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
+  color: #aaa;
+  letter-spacing: 1px;
+}
+
+.footer span {
+  color: #00ffcc;
+  font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Simple Attack Game</h1>
+
+<div class="game">
+  <div class="character">
+    <img src="hero.png">
+    <div>HERO</div>
+  </div>
+
+  <div class="character">
+    <img src="villain.png" id="villain">
+    <div>VILLAIN</div>
+    <div id="hp">HP: 50</div>
+  </div>
+</div>
+
+<button onclick="attack()">ATTACK</button>
+
+<div id="win">🎉 YOU WIN 🎉</div>
+
+<div class="footer">
+  Developed by <span>Mahmud Gaming</span>
+</div>
+
+<script>
+let villainHP = 50;
+
+function attack() {
+  villainHP -= 10;
+  document.getElementById("hp").innerText = "HP: " + villainHP;
+
+  let v = document.getElementById("villain");
+  v.style.transform = "translateX(-10px)";
+  setTimeout(() => v.style.transform = "translateX(10px)", 50);
+  setTimeout(() => v.style.transform = "translateX(0)", 100);
+
+  if (villainHP <= 0) {
+    document.getElementById("win").style.display = "block";
+  }
+}
+</script>
+
+</body>
+</html>
