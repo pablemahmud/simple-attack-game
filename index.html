@@ -54,7 +54,9 @@ canvas{display:block}
   bottom:20px;
   left:0;
   width:100%;
-  padding:0 10px 0 20px;
+  max-width:100vw;
+  box-sizing:border-box;
+  padding:0 60px 0 20px; /* ডান দিক নিশ্চিতভাবে ভেতরে */
   display:flex;
   justify-content:space-between;
   z-index:10;
@@ -92,9 +94,9 @@ canvas{display:block}
   border-color:transparent transparent transparent white;
 }
 
-/* 🔥 RIGHT BUTTON MORE LEFT */
+/* 🔥 HARD FIX: RIGHT BUTTON ALWAYS INSIDE */
 #rightBtn{
-  margin-right:50px;
+  margin-right:20px;
 }
 </style>
 </head>
@@ -139,74 +141,63 @@ villainImg.src = "nasir.png";
 const bgMusic = new Audio("game.mp3");
 bgMusic.loop = true;
 bgMusic.volume = 0.8;
-
 const hitSound = new Audio("hit.mp3");
 
 /* STATE */
-let state = "idle";
-let score = 0;
-let frame = 0;
-let lives = 3;
-
-/* SHOOT FREQUENCY */
-let shootInterval = 120;
+let state="idle";
+let score=0, frame=0, lives=3;
+let shootInterval=120;
 
 /* HERO */
-let hero = {
-  x: canvas.width/2 - 40,
-  y: canvas.height - 140,
-  w: 80,
-  h: 110,
-  speed: 6,
-  shake: 0
+let hero={
+  x:canvas.width/2-40,
+  y:canvas.height-140,
+  w:80,
+  h:110,
+  speed:6,
+  shake:0
 };
 
 /* VILLAIN */
-let villain = {
-  x: canvas.width/2 - 65,
-  y: 20,
-  w: 130,
-  h: 170,
-  dir: 1,
-  speed: 3
+let villain={
+  x:canvas.width/2-65,
+  y:20,
+  w:130,
+  h:170,
+  dir:1,
+  speed:3
 };
 
-let bullets = [];
+let bullets=[];
 
 /* AUDIO UNLOCK */
 function unlockAudio(){
   bgMusic.play().then(()=>{
     bgMusic.pause();
-    bgMusic.currentTime = 0;
+    bgMusic.currentTime=0;
   }).catch(()=>{});
-  document.removeEventListener("touchstart", unlockAudio);
-  document.removeEventListener("click", unlockAudio);
+  document.removeEventListener("touchstart",unlockAudio);
+  document.removeEventListener("click",unlockAudio);
 }
-document.addEventListener("touchstart", unlockAudio);
-document.addEventListener("click", unlockAudio);
+document.addEventListener("touchstart",unlockAudio);
+document.addEventListener("click",unlockAudio);
 
 /* START */
-startBtn.onclick = ()=>{
-  state = "play";
-  score = 0;
-  frame = 0;
-  lives = 3;
-  bullets = [];
-  shootInterval = 120;
-
-  hero.x = canvas.width/2 - hero.w/2;
-  life.innerText = "❤️❤️❤️";
-  scoreDiv.innerText = "Score: 0";
-
-  bgMusic.currentTime = 0;
+startBtn.onclick=()=>{
+  state="play";
+  score=0; frame=0; lives=3;
+  bullets=[];
+  shootInterval=120;
+  hero.x=canvas.width/2-hero.w/2;
+  life.innerText="❤️❤️❤️";
+  scoreDiv.innerText="Score: 0";
+  bgMusic.currentTime=0;
   bgMusic.play();
-
-  startBtn.style.display = "none";
+  startBtn.style.display="none";
 };
 
 /* CONTROLS */
 let moveLeft=false, moveRight=false;
-
 function bind(btn,fn){
   btn.addEventListener("touchstart",e=>{e.preventDefault();fn(true);});
   btn.addEventListener("touchend",e=>{e.preventDefault();fn(false);});
@@ -219,26 +210,24 @@ bind(rightBtn,v=>moveRight=v);
 /* SHOOT */
 function shoot(){
   bullets.push({
-    x: villain.x + villain.w/2,
-    y: villain.y + villain.h,
-    vy: 7
+    x:villain.x+villain.w/2,
+    y:villain.y+villain.h,
+    vy:7
   });
 }
 
 /* HIT */
 function hit(){
   lives--;
-  hero.shake = 12;
-  hitSound.currentTime = 0;
+  hero.shake=12;
+  hitSound.currentTime=0;
   hitSound.play();
   navigator.vibrate?.([120]);
-
-  life.innerText = "❤️".repeat(lives);
-
-  if(lives <= 0){
-    state = "finish";
+  life.innerText="❤️".repeat(lives);
+  if(lives<=0){
+    state="finish";
     bgMusic.pause();
-    startBtn.style.display = "block";
+    startBtn.style.display="block";
   }
 }
 
@@ -246,60 +235,56 @@ function hit(){
 function loop(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  if(state === "play"){
-    if(moveLeft) hero.x -= hero.speed;
-    if(moveRight) hero.x += hero.speed;
+  if(state==="play"){
+    if(moveLeft) hero.x-=hero.speed;
+    if(moveRight) hero.x+=hero.speed;
 
-    villain.x += villain.dir * villain.speed;
-    if(villain.x <= 0 || villain.x + villain.w >= canvas.width){
-      villain.dir *= -1;
-    }
+    villain.x+=villain.dir*villain.speed;
+    if(villain.x<=0||villain.x+villain.w>=canvas.width) villain.dir*=-1;
 
-    if(frame % shootInterval === 0) shoot();
+    if(frame%shootInterval===0) shoot();
 
     bullets.forEach(b=>{
-      b.y += b.vy;
-      ctx.fillStyle = "gold";
+      b.y+=b.vy;
+      ctx.fillStyle="gold";
       ctx.beginPath();
       ctx.arc(b.x,b.y,6,0,Math.PI*2);
       ctx.fill();
-
-      if(hero.x < b.x && hero.x+hero.w > b.x &&
-         hero.y < b.y && hero.y+hero.h > b.y){
+      if(hero.x<b.x&&hero.x+hero.w>b.x&&hero.y<b.y&&hero.y+hero.h>b.y){
         hit();
-        b.y = canvas.height + 200;
+        b.y=canvas.height+200;
       }
     });
 
-    bullets = bullets.filter(b=>b.y < canvas.height+100);
-
+    bullets=bullets.filter(b=>b.y<canvas.height+100);
     score++;
-    scoreDiv.innerText = "Score: " + score;
+    scoreDiv.innerText="Score: "+score;
 
-    if(frame % 200 === 0){
-      shootInterval = Math.max(15, shootInterval - 10);
-    }
+    if(frame%200===0) shootInterval=Math.max(15,shootInterval-10);
   }
 
-  ctx.drawImage(villainImg, villain.x, villain.y, villain.w, villain.h);
+  ctx.drawImage(villainImg,villain.x,villain.y,villain.w,villain.h);
 
-  hero.x = Math.max(0, Math.min(canvas.width-hero.w, hero.x));
-  let shake = hero.shake ? Math.random()*8-4 : 0;
+  hero.x=Math.max(0,Math.min(canvas.width-hero.w,hero.x));
+  let shake=hero.shake?Math.random()*8-4:0;
   if(hero.shake>0) hero.shake--;
 
-  /* 💀 GAME OVER IMAGE – BIG + CENTER */
-  if(state === "finish"){
-    const bigW = hero.w * 2.2;
-    const bigH = hero.h * 2.2;
+  if(state==="finish"){
+    const bigW=hero.w*2.8;
+    const bigH=hero.h*2.8;
+    ctx.save();
+    ctx.shadowColor="rgba(0,0,0,0.6)";
+    ctx.shadowBlur=30;
     ctx.drawImage(
       heroHitImg,
-      canvas.width/2 - bigW/2,
-      canvas.height/2 - bigH/2,
+      canvas.width/2-bigW/2,
+      canvas.height/2-bigH/2,
       bigW,
       bigH
     );
+    ctx.restore();
   }else{
-    ctx.drawImage(heroImg, hero.x+shake, hero.y, hero.w, hero.h);
+    ctx.drawImage(heroImg,hero.x+shake,hero.y,hero.w,hero.h);
   }
 
   frame++;
