@@ -6,53 +6,69 @@
 <title>মির্জা সাহেব কে বাঁচাও</title>
 
 <style>
-body{
-  margin:0;
-  overflow:hidden;
-  font-family:Arial,sans-serif;
-  background:linear-gradient(180deg,#1e3c72,#2a5298);
-  color:white;
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(180deg,#1e3c72,#2a5298);
+  color: white;
 }
-#ui{
-  position:fixed;
-  top:10px;
-  width:100%;
-  text-align:center;
-  z-index:10;
+
+#ui {
+  position: fixed;
+  top: 10px;
+  width: 100%;
+  text-align: center;
+  z-index: 10;
 }
-#controls{
-  position:fixed;
-  bottom:60px;
-  width:100%;
-  display:flex;
-  justify-content:center;
-  gap:15px;
-  z-index:10;
+
+#score {
+  margin-top: 6px;
 }
-.btn{
-  padding:12px 22px;
-  font-size:16px;
-  border:none;
-  border-radius:8px;
-  background:crimson;
-  color:white;
+
+canvas {
+  display: block;
 }
-#footer{
-  position:fixed;
-  bottom:8px;
-  width:100%;
-  text-align:center;
-  font-size:13px;
+
+#controls {
+  position: fixed;
+  bottom: 60px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  z-index: 10;
 }
-#footer span{color:#00ffd5;font-weight:bold;}
-canvas{display:block;}
+
+.btn {
+  padding: 12px 22px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  background: crimson;
+  color: white;
+}
+
+#footer {
+  position: fixed;
+  bottom: 8px;
+  width: 100%;
+  text-align: center;
+  font-size: 13px;
+  color: #ddd;
+}
+
+#footer span {
+  color: #00ffd5;
+  font-weight: bold;
+}
 </style>
 </head>
 
 <body>
 
 <div id="ui">
-  <b>মির্জা সাহেব কে বাঁচাও</b>
+  <div><b>মির্জা সাহেব কে বাঁচাও</b></div>
   <div id="score">Score: 0</div>
 </div>
 
@@ -73,18 +89,17 @@ const ctx = canvas.getContext("2d");
 canvas.width = innerWidth;
 canvas.height = innerHeight;
 
+let ground = canvas.height - 140;
+let running = false;
+let score = 0;
+let speed = 6;
+let frame = 0;
+
 const heroImg = new Image();
 heroImg.src = "mirza.png";
 
 const villainImg = new Image();
 villainImg.src = "nasir.png";
-
-let ground = canvas.height - 150;
-let gravity = 1;
-let running = false;
-let score = 0;
-let speed = 6;
-let frame = 0;
 
 let player = {
   x: 80,
@@ -97,116 +112,105 @@ let player = {
 };
 
 let obstacles = [];
+const gravity = 1;
 
-/* ---------- GAME CONTROL ---------- */
-function startGame(){
+function startGame() {
   running = true;
+  obstacles = [];
   score = 0;
   speed = 6;
-  frame = 0;
-  obstacles = [];
-  player.y = ground;
-  player.vy = 0;
-  player.jumping = false;
-  document.getElementById("score").innerText = "Score: 0";
 }
 
-function endGame(){
+function endGame() {
   running = false;
 }
 
-/* ---------- INPUT ---------- */
-function jump(){
-  if(!running) return;
-  if(!player.jumping && !player.low){
+function jump() {
+  if (!player.jumping && !player.low) {
     player.vy = -18;
     player.jumping = true;
     navigator.vibrate?.(30);
   }
 }
 
-function low(){
-  if(!running) return;
-  if(!player.jumping){
+function low() {
+  if (!player.jumping) {
     player.low = true;
     player.h = 45;
   }
 }
 
-function stand(){
+function stand() {
   player.low = false;
   player.h = 80;
 }
 
 document.addEventListener("click", jump);
-document.addEventListener("keydown", e=>{
-  if(e.code==="Space") jump();
-  if(e.code==="ArrowDown") low();
+document.addEventListener("keydown", e => {
+  if (e.code === "Space") jump();
+  if (e.code === "ArrowDown") low();
 });
-document.addEventListener("keyup", e=>{
-  if(e.code==="ArrowDown") stand();
+document.addEventListener("keyup", e => {
+  if (e.code === "ArrowDown") stand();
 });
 
-/* ---------- GAME LOOP ---------- */
-function spawnObstacle(){
+function spawnObstacle() {
   obstacles.push({
     x: canvas.width,
-    y: ground + 40,
+    y: ground + 30,
     w: 50,
     h: 60
   });
 }
 
-function loop(){
+function update() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  if(running){
+  if (running) {
     // physics
     player.vy += gravity;
     player.y += player.vy;
 
-    if(player.y >= ground){
+    if (player.y >= ground) {
       player.y = ground;
       player.vy = 0;
       player.jumping = false;
     }
 
-    // obstacle logic
-    if(frame % 90 === 0) spawnObstacle();
-    if(frame % 300 === 0) speed += 0.6;
+    if (frame % 90 === 0) spawnObstacle();
+    if (frame % 300 === 0) speed += 0.6;
 
-    obstacles.forEach(o=>{
+    obstacles.forEach(o => {
       o.x -= speed;
 
       // collision
-      if(
+      if (
         player.x < o.x + o.w &&
         player.x + player.w > o.x &&
         player.y < o.y + o.h &&
         player.y + player.h > o.y
-      ){
+      ) {
         navigator.vibrate?.([100,50,100]);
-        alert("Game Over!\nScore: "+score);
+        alert("Game Over\nScore: " + score);
         running = false;
       }
 
-      ctx.drawImage(villainImg,o.x,o.y,o.w,o.h);
+      ctx.drawImage(villainImg, o.x, o.y, o.w, o.h);
     });
 
-    obstacles = obstacles.filter(o=>o.x+o.w>0);
-
+    obstacles = obstacles.filter(o => o.x + o.w > 0);
     score++;
-    document.getElementById("score").innerText="Score: "+score;
+    document.getElementById("score").innerText = "Score: " + score;
     frame++;
   }
 
-  // hero draw
-  ctx.drawImage(heroImg,player.x,player.y,player.w,player.h);
+  // hero
+  ctx.drawImage(heroImg, player.x, player.y, player.w, player.h);
 
-  requestAnimationFrame(loop);
+  requestAnimationFrame(update);
 }
 
-loop();
+update();
 </script>
 
 </body>
